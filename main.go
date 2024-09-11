@@ -3,18 +3,23 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net"
+	"os"
 	"strings"
 	"time"
 
 	api "github.com/David-Antunes/network-emulation-proxy/api"
 )
 
+var rttLog = log.New(os.Stdout, "RTT INFO: ", log.Ltime)
+
 func main() {
 	listenAddr, err := net.ResolveUDPAddr("udp4", ":8000")
 	if err != nil {
 		panic(err)
 	}
+	rttLog.Println(listenAddr)
 	port, err := net.ListenUDP("udp4", listenAddr)
 	if err != nil {
 		panic(err)
@@ -28,6 +33,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	rttLog.Println("IP address:", addrs[0])
 	splitAddr := strings.Split(addrs[0].String(), ".")
 
 	if len(splitAddr) != 4 {
@@ -35,7 +41,7 @@ func main() {
 	}
 
 	broadcastIp := splitAddr[0] + "." + splitAddr[1] + "." + splitAddr[2] + ".255:8000"
-
+	rttLog.Println("Broadcast Address:", broadcastIp)
 	conn, err := net.Dial("udp4", broadcastIp)
 
 	if err != nil {
@@ -43,7 +49,7 @@ func main() {
 	}
 
 	for {
-		buf := make([]byte, 1024)
+		buf := make([]byte, 2048)
 		size, err := port.Read(buf)
 
 		if err != nil {
@@ -69,6 +75,9 @@ func main() {
 		}
 
 		conn.Write(req)
+		rttLog.Println("Received:", resp.StartTime)
+		rttLog.Println("Registered:", resp.ReceiveTime)
+		rttLog.Println("Difference:", resp.ReceiveTime.Sub(resp.StartTime).Milliseconds(), "ms")
 	}
 
 }
