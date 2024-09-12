@@ -15,25 +15,37 @@ import (
 var rttLog = log.New(os.Stdout, "RTT INFO: ", log.Ltime)
 
 func main() {
+	//Configure IP and Broadcast Addr
 	listenAddr, err := net.ResolveUDPAddr("udp4", ":8000")
+
 	if err != nil {
 		panic(err)
 	}
+
 	rttLog.Println(listenAddr)
+
 	port, err := net.ListenUDP("udp4", listenAddr)
+
 	if err != nil {
 		panic(err)
 	}
 
 	ief, err := net.InterfaceByName("eth0")
+
 	if err != nil {
 		panic(err)
 	}
+
 	addrs, err := ief.Addrs()
+
 	if err != nil {
 		panic(err)
 	}
-	rttLog.Println("IP address:", addrs[0])
+
+	ip := addrs[0].(*net.IPNet).IP.To4()
+
+	rttLog.Println("IP address:", ip)
+
 	splitAddr := strings.Split(addrs[0].String(), ".")
 
 	if len(splitAddr) != 4 {
@@ -41,23 +53,32 @@ func main() {
 	}
 
 	broadcastIp := splitAddr[0] + "." + splitAddr[1] + "." + splitAddr[2] + ".255:8000"
+
 	rttLog.Println("Broadcast Address:", broadcastIp)
+
 	conn, err := net.Dial("udp4", broadcastIp)
 
 	if err != nil {
 		panic(err)
 	}
 
+	var size int
+	var addr net.Addr
+	var ipSender net.IP
+
 	for {
 		buf := make([]byte, 2048)
-		size, err := port.Read(buf)
+		size, addr, err = port.ReadFrom(buf)
 
 		if err != nil {
 			panic(err)
 		}
 
 		buf = buf[:size]
-
+		ipSender = addr.(*net.UDPAddr).IP.To4()
+		if ip.Equal(ipSender) {
+			continue
+		}
 		resp := &api.RTTRequest{}
 		d := json.NewDecoder(bytes.NewReader(buf))
 		err = d.Decode(resp)
@@ -75,9 +96,7 @@ func main() {
 		}
 
 		conn.Write(req)
-		rttLog.Println("Received:", resp.StartTime)
-		rttLog.Println("Registered:", resp.ReceiveTime)
-		rttLog.Println("Difference:", resp.ReceiveTime.Sub(resp.StartTime).Milliseconds(), "ms")
+		rttLog.Println("StartTime:", resp.StartTime, "ReceiveTime:", resp.ReceiveTime, "Difference:", resp.ReceiveTime.Sub(resp.StartTime))
 	}
 
 }
