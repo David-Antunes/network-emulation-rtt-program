@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	api "github.com/David-Antunes/network-emulation-proxy/api"
+	api "github.com/David-Antunes/gone-proxy/api"
 )
 
 var rttLog = log.New(os.Stdout, "RTT INFO: ", log.Ltime)
