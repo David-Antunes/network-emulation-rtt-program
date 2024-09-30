@@ -2,7 +2,7 @@ module gone-proxy
 
 go 1.23
 
-require github.com/David-Antunes/gone-proxy v0.0.0-20240925110310-703f2bd38d6f
+require github.com/David-Antunes/gone-proxy v0.0.0-20240929142709-b39e6b508034
 
 require (
 	github.com/David-Antunes/network-emulation-proxy v0.0.0-20240912230258-6d23950f9d89 // indirect
